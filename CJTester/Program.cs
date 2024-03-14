@@ -9,10 +9,17 @@ namespace CJTester
         static void Main(string[] args)
         {
             Console.WriteLine("Entering Game...");
-
             using var game = new TestGame();
-            game.Run();
-
+            //using var game2 = new TestGame();
+            Task.Run(() =>
+            {
+                while (!game.IsExiting)
+                {
+                    game.RunOneFrame();
+                }
+            });
+            game.Exit();
+            Console.Read();
             Console.WriteLine("Exiting Game...");
 
         }
@@ -22,11 +29,14 @@ namespace CJTester
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch = null!;
+        public bool IsExiting { get; private set; } = false;
         public TestGame()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            IsFixedTimeStep = true;
+            TargetElapsedTime = TimeSpan.FromMilliseconds(170);
         }
 
         protected override void Initialize()
@@ -46,7 +56,7 @@ namespace CJTester
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+                IsExiting = true;
 
             // TODO: Add your update logic here
 

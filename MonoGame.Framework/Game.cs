@@ -419,14 +419,12 @@ namespace Microsoft.Xna.Framework
                 DoInitialize ();
                 _gameTimer = Stopwatch.StartNew();
                 _initialized = true;
+                (Platform as SdlGamePlatform).ShowWindow();
             }
 
-            BeginRun();            
 
-            //Not quite right..
-            Tick ();
+            (Platform as SdlGamePlatform).RunOneFrame();
 
-            EndRun ();
 
         }
 

@@ -82,16 +82,25 @@ namespace Microsoft.Xna.Framework
             EndScreenDeviceChange(displayName, pp.BackBufferWidth, pp.BackBufferHeight);
         }
 
-        public override void RunLoop()
+        public void ShowWindow()
         {
             Sdl.Window.Show(Window.Handle);
+        }
+        public void RunOneFrame()
+        {
+            SdlRunLoop();
+            Game.Tick();
+            Threading.Run();
+            GraphicsDevice.DisposeContexts();
+
+        }
+        public override void RunLoop()
+        {
+            ShowWindow();
 
             while (true)
             {
-                SdlRunLoop();
-                Game.Tick();
-                Threading.Run();
-                GraphicsDevice.DisposeContexts();
+                RunOneFrame();
 
                 if (_isExiting > 0)
                     break;
