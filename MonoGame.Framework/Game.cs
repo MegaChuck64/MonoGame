@@ -23,7 +23,6 @@ namespace Microsoft.Xna.Framework
     /// </summary>
     public partial class Game : IDisposable
     {
-        private GameComponentCollection _components;
         private GameServiceContainer _services;
         private ContentManager _content;
         internal GamePlatform Platform;
@@ -71,7 +70,6 @@ namespace Microsoft.Xna.Framework
 
             LaunchParameters = new LaunchParameters();
             _services = new GameServiceContainer();
-            _components = new GameComponentCollection();
             _content = new ContentManager(_services);
 
             Platform = GamePlatform.PlatformCreate(this);
@@ -114,15 +112,6 @@ namespace Microsoft.Xna.Framework
             {
                 if (disposing)
                 {
-                    // Dispose loaded game components
-                    for (int i = 0; i < _components.Count; i++)
-                    {
-                        var disposable = _components[i] as IDisposable;
-                        if (disposable != null)
-                            disposable.Dispose();
-                    }
-                    _components = null;
-
                     if (_content != null)
                     {
                         _content.Dispose();
@@ -184,14 +173,6 @@ namespace Microsoft.Xna.Framework
         /// The start up parameters for this <see cref="Game"/>.
         /// </summary>
         public LaunchParameters LaunchParameters { get; private set; }
-
-        /// <summary>
-        /// A collection of game components attached to this <see cref="Game"/>.
-        /// </summary>
-        public GameComponentCollection Components
-        {
-            get { return _components; }
-        }
 
         public TimeSpan InactiveSleepTime
         {
@@ -684,13 +665,6 @@ namespace Microsoft.Xna.Framework
             applyChanges(graphicsDeviceManager);
 #endif
 
-            // According to the information given on MSDN (see link below), all
-            // GameComponents in Components at the time Initialize() is called
-            // are initialized.
-            // http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.game.initialize.aspx
-            // Initialize all existing components
-            InitializeExistingComponents();
-
             _graphicsDeviceService = (IGraphicsDeviceService)
                 Services.GetService(typeof(IGraphicsDeviceService));
 
@@ -768,21 +742,6 @@ namespace Microsoft.Xna.Framework
 
         #region Event Handlers
 
-        private void Components_ComponentAdded(
-            object sender, GameComponentCollectionEventArgs e)
-        {
-            // Since we only subscribe to ComponentAdded after the graphics
-            // devices are set up, it is safe to just blindly call Initialize.
-            e.GameComponent.Initialize();
-            CategorizeComponent(e.GameComponent);
-        }
-
-        private void Components_ComponentRemoved(
-            object sender, GameComponentCollectionEventArgs e)
-        {
-            DecategorizeComponent(e.GameComponent);
-        }
-
         private void Platform_AsyncRunLoopEnded(object sender, EventArgs e)
         {
             AssertNotDisposed();
@@ -854,15 +813,6 @@ namespace Microsoft.Xna.Framework
 
             Platform.BeforeInitialize();
             Initialize();
-
-            // We need to do this after virtual Initialize(...) is called.
-            // 1. Categorize components into IUpdateable and IDrawable lists.
-            // 2. Subscribe to Added/Removed events to keep the categorized
-            //    lists synced and to Initialize future components as they are
-            //    added.            
-            CategorizeComponents();
-            _components.ComponentAdded += Components_ComponentAdded;
-            _components.ComponentRemoved += Components_ComponentRemoved;
         }
 
 		internal void DoExiting()
@@ -890,50 +840,6 @@ namespace Microsoft.Xna.Framework
                     throw new InvalidOperationException("GraphicsDeviceManager already registered for this Game object");
                 _graphicsDeviceManager = value;
             }
-        }
-
-        // NOTE: InitializeExistingComponents really should only be called once.
-        //       Game.Initialize is the only method in a position to guarantee
-        //       that no component will get a duplicate Initialize call.
-        //       Further calls to Initialize occur immediately in response to
-        //       Components.ComponentAdded.
-        private void InitializeExistingComponents()
-        {
-            for(int i = 0; i < Components.Count; ++i)
-                Components[i].Initialize();
-        }
-
-        private void CategorizeComponents()
-        {
-            DecategorizeComponents();
-            for (int i = 0; i < Components.Count; ++i)
-                CategorizeComponent(Components[i]);
-        }
-
-        // FIXME: I am open to a better name for this method.  It does the
-        //        opposite of CategorizeComponents.
-        private void DecategorizeComponents()
-        {
-            _updateables.Clear();
-            _drawables.Clear();
-        }
-
-        private void CategorizeComponent(IGameComponent component)
-        {
-            if (component is IUpdateable)
-                _updateables.Add((IUpdateable)component);
-            if (component is IDrawable)
-                _drawables.Add((IDrawable)component);
-        }
-
-        // FIXME: I am open to a better name for this method.  It does the
-        //        opposite of CategorizeComponent.
-        private void DecategorizeComponent(IGameComponent component)
-        {
-            if (component is IUpdateable)
-                _updateables.Remove((IUpdateable)component);
-            if (component is IDrawable)
-                _drawables.Remove((IDrawable)component);
         }
 
         /// <summary>
