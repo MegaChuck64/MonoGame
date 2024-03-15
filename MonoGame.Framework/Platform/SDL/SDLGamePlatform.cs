@@ -50,15 +50,12 @@ namespace Microsoft.Xna.Framework
             _dropList = new List<string>();
 
             Sdl.Init((int)(
-                Sdl.InitFlags.Video |
-                Sdl.InitFlags.Joystick |
-                Sdl.InitFlags.GameController |
-                Sdl.InitFlags.Haptic
-            ));
+                Sdl.InitFlags.Video )
+            );
 
             Sdl.DisableScreenSaver();
 
-            GamePad.InitDatabase();
+            //GamePad.InitDatabase();
             Window = _view = new SdlGameWindow(_game);
         }
 
